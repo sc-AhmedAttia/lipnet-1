@@ -4,6 +4,7 @@
 # repo: http://www.github.com/omarsalinas16/lipnet
 # license: Apache License, Version 2.0
 
+cmake
 dlib==19.15.0
 editdistance==0.4
 Flask==1.1.1

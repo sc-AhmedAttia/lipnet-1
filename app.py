@@ -13,7 +13,11 @@ def lips_to_text():
         return Response("No video received", status=400)
 
     vname = "video." + video.filename.split(".")[-1]
+
+    start0 = time.time()
     video.save(vname)
+    print("video saving ", time.time() - start0)
+
     result = predict.main(vname)
     print("request time ", time.time() - start)
     return Response(result)
@@ -25,4 +29,4 @@ def index():
 
 
 if __name__ == "__main__":
-    app.run(threaded=True)
+    app.run(threaded=True, debug=True)

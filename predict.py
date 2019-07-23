@@ -19,14 +19,8 @@ from preprocessing.extract_roi import extract_video_data
 import time
 import tensorflow as tf
 
+
 # from memory_profiler import profile
-
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-# init(autoreset=True)
-
-
-ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
-DICTIONARY_PATH = os.path.realpath(os.path.join(ROOT_PATH, 'data', 'dictionaries', 'grid.txt'))
 
 
 class PredictConfig(NamedTuple):
@@ -40,6 +34,12 @@ class PredictConfig(NamedTuple):
     max_string: int = env.MAX_STRING
 
 
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+# init(autoreset=True)
+
+ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
+DICTIONARY_PATH = os.path.realpath(os.path.join(ROOT_PATH, 'data', 'dictionaries', 'grid.txt'))
+
 weights = os.path.realpath('data/res/2018-09-26-02-30/lipnet_065_1.96.hdf5')
 predictor_path = os.path.realpath('data/predictors/shape_predictor_68_face_landmarks.dat')
 
@@ -51,21 +51,58 @@ def init_dlib():
     predictor = dlib.shape_predictor(predictor_path)
 
 
-start = time.time()
-init_dlib()
-print("dlib loading ", time.time() - start)
+if os.environ.get("WERKZEUG_RUN_MAIN") == "true":
+    global graph, decoder, config
+    start = time.time()
+    init_dlib()
+    print("dlib loading ", time.time() - start)
 
-start = time.time()
-config = PredictConfig(weights)
+    start = time.time()
+    config = PredictConfig(weights)
 
-global graph
-graph = tf.get_default_graph()
-with graph.as_default():
-    lipnet = LipNet(config.frame_count, config.image_channels, config.image_height, config.image_width,
-                    config.max_string).compile_model().load_weights(config.weights)
-    decoder = create_decoder(DICTIONARY_PATH)
-print("lipnet loading ", time.time() - start)
+    graph = tf.get_default_graph()
+    with graph.as_default():
+        lipnet = LipNet(config.frame_count, config.image_channels, config.image_height, config.image_width,
+                        config.max_string).compile_model().load_weights(config.weights)
+        decoder = create_decoder(DICTIONARY_PATH)
+    print("lipnet loading ", time.time() - start)
+#
+# lipnet.model.save('model.hdf5')
 
+# from keras.models import load_model
+# from keras.utils import plot_model
+# # @profile
+# def init_model():
+#     global full_model
+#     with graph.as_default():
+#         full_model = load_model('model.hdf5', custom_objects={'<lambda>': lambda y_true, y_pred: y_pred})
+# start = time.time()
+# init_model()
+# # plot_model(full_model, to_file='full_model.png')
+# print("model loading ", time.time() - start)
+# decoder = create_decoder(DICTIONARY_PATH)
+from keras import backend as k
+from keras.layers import Input
+
+
+# from keras.models import Model
+# # @profile
+# def def_input(frame_count):
+#     # inp = Input(shape=LipNet.get_input_shape(frame_count, config.image_channels, config.image_height, config.image_width),
+#     #       dtype='float32', name='input')
+#     inp = full_model.layers[0]
+#     # return Model(inputs=inp,
+#     #       outputs=full_model.layers[25].output)
+#     return k.function([inp, k.learning_phase()], [full_model.layers[25].output])
+# # @profile
+# def model_predict(frame_count, input_batch):
+#     capture_softmax_output = def_input(frame_count)
+#     # capture_softmax_output.compile()
+#     # plot_model(capture_softmax_output, to_file='capture_softmax_output.png')
+#     # return capture_softmax_output.predict(input_batch)
+#     return capture_softmax_output([input_batch, 0])[0]
+#     # out = full_model.predict(input_batch)
+#     # return out
 
 def main(video_path):
     """
@@ -110,10 +147,10 @@ def main(video_path):
         return
 
     # config = PredictConfig(weights, video, predictor_path)
-    return predict(video, config)
+    return predict(video)
 
 
-def predict(video_path, config: PredictConfig):
+def predict(video_path):
     # print("\nPREDICTION\n")
     #
     # print('Loading weights at: {}'.format(config.weights))
@@ -131,7 +168,7 @@ def predict(video_path, config: PredictConfig):
     video_paths = get_list_of_videos(video_path)
 
     start = time.time()
-    for paths, lengths, y_pred in predict_batches(lipnet, video_paths):
+    for paths, lengths, y_pred in predict_batches(video_paths):
         valid_paths += paths
         input_lengths += lengths
 
@@ -198,7 +235,7 @@ def get_entire_video_data(path: str) -> np.ndarray:
         return get_video_data_from_file(path)
 
 
-def predict_batches(lipnet: LipNet, video_paths: [str]):
+def predict_batches(video_paths: [str]):
     batch_size = env.BATCH_SIZE
 
     # detector  = dlib.get_frontal_face_detector()
@@ -220,6 +257,7 @@ def predict_batches(lipnet: LipNet, video_paths: [str]):
         start = time.time()
         with graph.as_default():
             y_pred = lipnet.predict(x_data)
+            # y_pred = model_predict(75, x_data)
         print("lipnet prediction ", time.time() - start)
 
         yield (valid_paths, lengths, y_pred)

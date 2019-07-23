@@ -1,4 +1,4 @@
-from keras import backend as k
+# from keras import backend as k
 from keras.layers import Input
 from keras.layers.convolutional import Conv3D, ZeroPadding3D
 from keras.layers.core import Activation, Dense, Flatten, Lambda, SpatialDropout3D
@@ -72,7 +72,7 @@ def create_dense_layer(name: str, input_layer, output_size, kernel_initializer=C
 def ctc_lambda_func(args):
 	y_pred, labels, input_length, label_length = args
 	y_pred = y_pred[:, :, :]
-	
+	from keras import backend as k
 	return k.ctc_batch_cost(labels, y_pred, input_length, label_length)
 
 

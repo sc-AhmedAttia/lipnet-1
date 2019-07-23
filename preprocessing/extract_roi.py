@@ -75,21 +75,30 @@ def extract_video_data(path: str, detector, predictor, verbose: bool = True) -> 
 
 
 def extract_mouth_on_frame(frame: np.ndarray, detector, predictor, idx: int) -> Optional[np.ndarray]:
-    m_points = extract_mouth_points(frame, detector, predictor)
+    global process_frame
+    process_frame = True if idx == 0 else process_frame
 
-    if m_points is None:
-        # print('\n' + ERROR_LOG + 'No ROI found at frame {}'.format(idx))
-        return None
+    if process_frame:
+        # print(str(idx), " frame processed")
+        m_points = extract_mouth_points(frame, detector, predictor)
 
-    m_center = get_mouth_points_center(m_points)
-    s_m_center = swap_center_axis(m_center)
+        if m_points is None:
+            # print('\n' + ERROR_LOG + 'No ROI found at frame {}'.format(idx))
+            # process_frame = True
+            return None
+
+        m_center = get_mouth_points_center(m_points)
+        global s_m_center
+        s_m_center = swap_center_axis(m_center)
 
     crop = crop_image(frame, s_m_center, IMAGE_SIZE)
 
     if crop.shape != FRAME_SHAPE:
         print('\n' + ERROR_LOG + 'Wrong shape {} at frame {}'.format(crop.shape, idx))
+        process_frame = True
         return None
 
+    process_frame = not process_frame
     return crop
 
 

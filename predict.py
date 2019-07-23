@@ -51,21 +51,21 @@ def init_dlib():
     predictor = dlib.shape_predictor(predictor_path)
 
 
-if os.environ.get("WERKZEUG_RUN_MAIN") == "true":
-    global graph, decoder, config
-    start = time.time()
-    init_dlib()
-    print("dlib loading ", time.time() - start)
+# if os.environ.get("WERKZEUG_RUN_MAIN") == "true":
+global graph, decoder, config
+start = time.time()
+init_dlib()
+print("dlib loading ", time.time() - start)
 
-    start = time.time()
-    config = PredictConfig(weights)
+start = time.time()
+config = PredictConfig(weights)
 
-    graph = tf.get_default_graph()
-    with graph.as_default():
-        lipnet = LipNet(config.frame_count, config.image_channels, config.image_height, config.image_width,
-                        config.max_string).compile_model().load_weights(config.weights)
-        decoder = create_decoder(DICTIONARY_PATH)
-    print("lipnet loading ", time.time() - start)
+graph = tf.get_default_graph()
+with graph.as_default():
+    lipnet = LipNet(config.frame_count, config.image_channels, config.image_height, config.image_width,
+                    config.max_string).compile_model().load_weights(config.weights)
+    decoder = create_decoder(DICTIONARY_PATH)
+print("lipnet loading ", time.time() - start)
 #
 # lipnet.model.save('model.hdf5')
 

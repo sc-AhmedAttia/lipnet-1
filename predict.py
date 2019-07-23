@@ -52,7 +52,7 @@ def init_dlib():
 
 
 # if os.environ.get("WERKZEUG_RUN_MAIN") == "true":
-global lipnet, decoder
+global config, graph, lipnet, decoder
 start = time.time()
 init_dlib()
 print("dlib loading ", time.time() - start)
